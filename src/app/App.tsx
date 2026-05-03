@@ -177,3 +177,53 @@ export default function App() {
     </div>
   );
 }
+
+const ros = new ROSLIB.Ros({
+  url: 'ws://localhost:9090'
+});
+
+window.addEventListener("gamepadconnected", () => {
+    
+  const publisher = new ROSLIB.Topic({
+    ros,
+    name: 'gamepad_input',
+    messageType: 'custom_msg/GamepadData'
+  });
+
+  setInterval(() => {
+    const gamepad = navigator.getGamepads()[0];
+  
+    if(!gamepad) {
+      return;
+    }
+
+    publisher.publish(
+      new ROSLIB.Message({ 
+        axis_left_x:   gamepad.axes[0],
+        axis_left_y:   (-1)*(gamepad.axes[1]),
+        axis_right_x:  gamepad.axes[2],
+        axis_right_y:  (-1)*(gamepad.axes[3]),
+        trigger_left :(gamepad.axes[4] + 1) / 2,
+        trigger_right :(gamepad.axes[5] + 1) / 2,
+        button_a: gamepad.buttons[0].pressed,
+        button_b: gamepad.buttons[1].pressed,
+        button_x: gamepad.buttons[2].pressed,
+        button_y: gamepad.buttons[3].pressed
+      })
+    );
+  
+    /*console.log({
+      leftX:   gamepad.axes[0].toFixed(2),
+      leftY:   gamepad.axes[1].toFixed(2),
+      rightX:  gamepad.axes[2].toFixed(2),
+      rightY:  gamepad.axes[3].toFixed(2),
+      trigger_left :(gamepad.axes[4] + 1) / 2,
+      trigger_right :(gamepad.axes[5] + 1) / 2,
+      button_a: gamepad.buttons[0].pressed,
+      button_b: gamepad.buttons[1].pressed,
+      button_x: gamepad.buttons[2].pressed,
+      button_y: gamepad.buttons[3].pressed,
+    });*/
+  
+  }, 50);
+});
