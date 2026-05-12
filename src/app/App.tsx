@@ -205,6 +205,8 @@ window.addEventListener("gamepadconnected", () => {
         axis_right_y:  (-1)*(gamepad.axes[3]),
         trigger_left :(gamepad.axes[4] + 1) / 2,
         trigger_right :(gamepad.axes[5] + 1) / 2,
+        button_right: gamepad.buttons[5].pressed,
+        button_left: gamepad.buttons[4].pressed,
         button_a: gamepad.buttons[0].pressed,
         button_b: gamepad.buttons[1].pressed,
         button_x: gamepad.buttons[2].pressed,
@@ -227,3 +229,12 @@ window.addEventListener("gamepadconnected", () => {
   
   }, 50);
 });
+
+/*setInterval(() => {
+    const gamepad = navigator.getGamepads()[0];
+    if (!gamepad) return;
+    
+    gamepad.buttons.forEach((btn, index) => {
+        if (btn.pressed) console.log(`Button index: ${index}`);
+    });
+}, 50);*/
