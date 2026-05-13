@@ -27,11 +27,12 @@ interface RoverSchematicProps {
 export function RoverSchematic({ ultrasonicData, wheelData }: RoverSchematicProps) {
   // Helper function to get layer colors based on distance
   const getLayerColors = (distance: number) => {
+    console.log("d " + distance);
     if (distance < 75) {
       return { inner: '#ef4444', middle: '#eab308', outer: '#22c55e' }; // All 3 layers active
-    } else if (distance < 150) {
+    } if (distance < 150) {
       return { inner: '#6b7280', middle: '#eab308', outer: '#22c55e' }; // 2 layers active
-    } else if (distance < 200) {
+    } if (distance < 200) {
       return { inner: '#6b7280', middle: '#6b7280', outer: '#22c55e' }; // 1 layer active
     }
     return { inner: '#6b7280', middle: '#6b7280', outer: '#6b7280' }; // All grey (no detection)

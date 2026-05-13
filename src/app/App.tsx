@@ -1,19 +1,58 @@
 import { useState, useEffect, useRef } from "react";
 import { RoverSchematic } from "./components/RoverSchematic";
+import * as ROSLIB from "roslib";
 import { MPU9250Dashboard } from "./components/MPU9250Dashboard";
 import { Card } from "./components/ui/card";
+
+//instance ross share 
+const ros = new ROSLIB.Ros({
+  url: 'ws://localhost:9090'
+});
+const ultrasonicTopic = new ROSLIB.Topic({
+  ros,
+  name: "/ultrasonic_distance_feedback",
+  messageType: "custom_msg/UltrasonicDistance",
+}); 
+const publisher = new ROSLIB.Topic({
+  ros,
+  name: 'gamepad_input',
+  messageType: 'custom_msg/GamepadData'
+});
+
+type UltrasonicDistances = {
+  uFL: number;
+  uFFL: number;
+  uFFR: number;
+  uFR: number;
+  uML: number;
+  uMR: number;
+  uBL: number;
+  uBR: number;
+};
+
+const SENSOR_ID_TO_KEY = {
+  1: "uFL",   // Front Left
+  2: "uFFL",  // Front Front Left
+  3: "uFFR",  // Front Front Right
+  4: "uFR",   // Front Right
+  5: "uMR",   // Middle Right
+  6: "uBR",   // Back Right
+  7: "uBL",   // Back Left
+  8: "uML",   // Middle Left
+} as const;
+
 
 export default function App() {
   // Ultrasonic sensor data (distance in cm) - 8 sensors total
   const [ultrasonicData, setUltrasonicData] = useState({
-    uFL: 300,   // Front Left
-    uFFL: 300,  // Front Front Left
-    uFFR: 300,  // Front Front Right
-    uFR: 300,   // Front Right
-    uML: 300,   // Middle Left (side)
-    uMR: 300,   // Middle Right (side)
-    uBL: 300,   // Back Left
-    uBR: 300,   // Back Right
+    uFL: 300,
+    uFFL: 300,
+    uFFR: 300,
+    uFR: 300,
+    uML: 300,
+    uMR: 300,
+    uBL: 300,
+    uBR: 300,
   });
 
   // Wheel motor and servo data
@@ -49,57 +88,36 @@ export default function App() {
     magnetometer: { x: 25, y: 10, z: -25 },
   });
 
+  useEffect(() => {
+    
+    
+    const handleMessage = (msg: any) => {
+      const key = SENSOR_ID_TO_KEY[msg.sensor as keyof typeof SENSOR_ID_TO_KEY];
+      if (!key) {
+        return;
+      }
+      console.log(msg.distance);
+      setUltrasonicData((prev: UltrasonicDistances) => {
+        console.log(prev);
+        console.log({
+          ...prev,
+          [key]: msg.distance
+        });
+        return {
+          ...prev,
+          [key]: msg.distance
+        };
+      });
+    };
+
+    ultrasonicTopic.subscribe(handleMessage);
+  }, []);
+      
+
   // Simulate real-time sensor data updates with smooth incrementation
   useEffect(() => {
     const interval = setInterval(() => {
-      // Increment ultrasonic sensors (50-250 cm, increment by 2)
-      const newUltrasonic = { ...ultrasonicRef.current };
-      Object.keys(newUltrasonic).forEach((key) => {
-        const k = key as keyof typeof newUltrasonic;
-        newUltrasonic[k] -= 10;
-        if (newUltrasonic[k] < 0) newUltrasonic[k] = 300;
-      });
-      ultrasonicRef.current = newUltrasonic;
-      setUltrasonicData(newUltrasonic);
-
-      // Increment wheel speeds (-100 to 100, increment by 2) and servo angles (-90 to 90, increment by 2)
-      const newWheelData = { ...wheelRef.current };
       
-      // Front Left
-      newWheelData.FL.speed += 2;
-      if (newWheelData.FL.speed > 100) newWheelData.FL.speed = -100;
-      newWheelData.FL.servoAngle += 2;
-      if (newWheelData.FL.servoAngle > 90) newWheelData.FL.servoAngle = -90;
-      
-      // Front Right
-      newWheelData.FR.speed += 2;
-      if (newWheelData.FR.speed > 100) newWheelData.FR.speed = -100;
-      newWheelData.FR.servoAngle += 2;
-      if (newWheelData.FR.servoAngle > 90) newWheelData.FR.servoAngle = -90;
-      
-      // Middle Left
-      newWheelData.ML.speed += 2;
-      if (newWheelData.ML.speed > 100) newWheelData.ML.speed = -100;
-      
-      // Middle Right
-      newWheelData.MR.speed += 2;
-      if (newWheelData.MR.speed > 100) newWheelData.MR.speed = -100;
-      
-      // Back Left
-      newWheelData.BL.speed += 2;
-      if (newWheelData.BL.speed > 100) newWheelData.BL.speed = -100;
-      newWheelData.BL.servoAngle += 2;
-      if (newWheelData.BL.servoAngle > 90) newWheelData.BL.servoAngle = -90;
-      
-      // Back Right
-      newWheelData.BR.speed += 2;
-      if (newWheelData.BR.speed > 100) newWheelData.BR.speed = -100;
-      newWheelData.BR.servoAngle += 2;
-      if (newWheelData.BR.servoAngle > 90) newWheelData.BR.servoAngle = -90;
-      
-      wheelRef.current = newWheelData;
-      setWheelData(newWheelData);
-
       // Increment MPU 9250 data smoothly
       const newMpuData = { ...mpuRef.current };
       
@@ -178,17 +196,9 @@ export default function App() {
   );
 }
 
-const ros = new ROSLIB.Ros({
-  url: 'ws://localhost:9090'
-});
+
 
 window.addEventListener("gamepadconnected", () => {
-    
-  const publisher = new ROSLIB.Topic({
-    ros,
-    name: 'gamepad_input',
-    messageType: 'custom_msg/GamepadData'
-  });
 
   setInterval(() => {
     const gamepad = navigator.getGamepads()[0];
