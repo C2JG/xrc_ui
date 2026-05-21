@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { RoverSchematic } from "./components/RoverSchematic";
-import * as ROSLIB from "roslib";
+//import * as ROSLIB from "roslib";
 import { MPU9250Dashboard } from "./components/MPU9250Dashboard";
 import { Card } from "./components/ui/card";
 
@@ -13,13 +13,27 @@ const ultrasonicTopic = new ROSLIB.Topic({
   name: "/ultrasonic_distance_feedback",
   messageType: "custom_msg/UltrasonicDistance",
 }); 
+
+const DCSpeedTopic = new ROSLIB.Topic({
+  ros,
+  name: "/dc_speed_feedback",
+  messageType: "custom_msg/DCSpeed",
+}); 
+
+const AngleServoTopic = new ROSLIB.Topic({
+  ros,
+  name: "/servo_angle_update",
+  messageType: "custom_msg/ServoAngle",
+}); 
+
+
 const publisher = new ROSLIB.Topic({
   ros,
   name: 'gamepad_input',
   messageType: 'custom_msg/GamepadData'
 });
 
-type UltrasonicDistances = {
+type ultrasonicData = {
   uFL: number;
   uFFL: number;
   uFFR: number;
@@ -29,6 +43,15 @@ type UltrasonicDistances = {
   uBL: number;
   uBR: number;
 };
+
+type WheelData = {
+   FL: { speed: number; servoAngle: number };
+   FR:{ speed: number; servoAngle: number };
+   ML: { speed: number;};
+   MR: { speed: number};
+   BL: { speed: number; servoAngle: number };
+   BR: { speed: number; servoAngle: number };
+  };
 
 const SENSOR_ID_TO_KEY = {
   1: "uFL",   // Front Left
@@ -40,6 +63,16 @@ const SENSOR_ID_TO_KEY = {
   7: "uBL",   // Back Left
   8: "uML",   // Middle Left
 } as const;
+
+
+const WHEELs_ID_TO_KEY = {
+   1:"FL",
+   2:"FR",
+   5:"ML",
+   6:"MR",
+   3:"BL",
+   4:"BR"
+  } as const;
 
 
 export default function App() {
@@ -65,6 +98,7 @@ export default function App() {
     BR: { speed: -100, servoAngle: -90 },
   });
 
+  
   // MPU 9250 sensor data
   const [mpuData, setMpuData] = useState({
     accelerometer: { x: -0.2, y: -0.2, z: 9.6 },
@@ -88,29 +122,47 @@ export default function App() {
     magnetometer: { x: 25, y: 10, z: -25 },
   });
 
+
+    
+    
+  // --- Souscriptions ROS ---
   useEffect(() => {
-    
-    
     const handleMessage = (msg: any) => {
       const key = SENSOR_ID_TO_KEY[msg.sensor as keyof typeof SENSOR_ID_TO_KEY];
-      if (!key) {
-        return;
-      }
-      console.log(msg.distance);
-      setUltrasonicData((prev: UltrasonicDistances) => {
-        console.log(prev);
-        console.log({
-          ...prev,
-          [key]: msg.distance
-        });
-        return {
-          ...prev,
-          [key]: msg.distance
-        };
-      });
+      if (!key) return;
+      console.log("[ultrasonic]", msg.sensor, "→", key, msg.distance);
+      setUltrasonicData((prev) => ({
+        ...prev,
+        [key]: msg.distance,
+      }));
+    };
+
+    const ActualisationSpeed = (msg: any) => {
+      const key = WHEELs_ID_TO_KEY[msg.dc as keyof typeof WHEELs_ID_TO_KEY];
+      if (!key) return;
+      console.log("[dc speed]", msg.dc, "→", key, msg.speed);
+      setWheelData((prev) => ({
+        ...prev,
+        [key]: { ...prev[key], speed: msg.speed },
+      }));
+    };
+
+    const ActualisationAngle = (msg: any) => {
+      const key = WHEELs_ID_TO_KEY[(msg.servo - 4) as keyof typeof WHEELs_ID_TO_KEY];
+      if (!key) return;
+      if (key === "ML" || key === "MR") return; // pas de servo au milieu
+      console.log("[servo]", msg.servo, "→", key, msg.angle);
+      setWheelData((prev) => ({
+        ...prev,
+        [key]: { ...prev[key], servoAngle: msg.angle },
+      }));
     };
 
     ultrasonicTopic.subscribe(handleMessage);
+    DCSpeedTopic.subscribe(ActualisationSpeed);
+    AngleServoTopic.subscribe(ActualisationAngle);
+    
+
   }, []);
       
 
@@ -157,6 +209,7 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, []);
+  
 
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6">
