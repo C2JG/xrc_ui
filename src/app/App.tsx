@@ -33,6 +33,24 @@ const publisher = new ROSLIB.Topic({
   messageType: 'custom_msg/GamepadData'
 });
 
+const raceModePublisher = new ROSLIB.Topic({
+  ros,
+  name: '/gamepad_race_input',
+  messageType: 'std_msgs/Int32'
+});
+
+const stateSwitchPublisher = new ROSLIB.Topic({
+  ros,
+  name: '/state_switch',
+  messageType: 'std_msgs/String'
+});
+
+const powerOffPublisher = new ROSLIB.Topic({
+  ros,
+  name: '/poweroff',
+  messageType: 'std_msgs/Empty'
+});
+
 type ultrasonicData = {
   uFL: number;
   uFFL: number;
@@ -105,6 +123,33 @@ export default function App() {
     gyroscope: { x: -5, y: -5, z: -2.5 },
     magnetometer: { x: 25, y: 10, z: -25 },
   });
+
+  const [raceMode, setRaceMode] = useState(0);
+
+  const toggleRaceMode = () => {
+  const newMode = raceMode === 0 ? 1 : 0;
+  setRaceMode(newMode);
+  raceModePublisher.publish(new ROSLIB.Message({ data: newMode }));
+  console.log("[race_mode] published:", newMode);
+  };
+
+  const [autoMode, setAutoMode] = useState(false);
+  const [powerOff, setPowerOff] = useState(false);
+
+  const toggleAutoMode = () => {
+  const newState = !autoMode;
+  setAutoMode(newState);
+  stateSwitchPublisher.publish(new ROSLIB.Message({ data: newState ? 'AUTO' : 'MANUAL' }));
+  console.log("[state_switch] published:", newState ? 'AUTO' : 'MANUAL');
+  };
+
+  const togglePowerOff = () => {
+  const newState = !powerOff;
+  setPowerOff(newState);
+  powerOffPublisher.publish(new ROSLIB.Message({}));
+  console.log("[poweroff] published empty");
+  };
+
 
   // Use refs to track current values for smooth incrementation
   const ultrasonicRef = useRef({ uFL: 300, uFFL: 300, uFFR: 300, uFR: 300, uML: 300, uMR: 300, uBL: 300, uBR: 300 });
@@ -212,41 +257,93 @@ export default function App() {
   
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Status Bar */}
-        <Card className="p-4 bg-slate-900 border-green-500">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-green-400 font-semibold">System Status: ONLINE</span>
-            </div>
-            <div className="text-gray-400 text-sm">
-              Last Update: {new Date().toLocaleTimeString()}
-            </div>
+  <div className="min-h-screen bg-slate-950 text-white p-6">
+    <div className="max-w-7xl mx-auto space-y-6">
+
+      {/* Status Bar */}
+      <Card className="p-4 bg-slate-900 border-green-500">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-green-400 font-semibold">System Status: ONLINE</span>
+          </div>
+          <div className="text-gray-400 text-sm">
+            Last Update: {new Date().toLocaleTimeString()}
+          </div>
+        </div>
+      </Card>
+
+      {/* Control Buttons Row */}
+      <Card className="p-3 bg-slate-900 border-slate-700">
+        <div className="flex items-center gap-3">
+
+          <button
+            onDoubleClick={toggleRaceMode}
+            className={`
+              flex-1 py-2 rounded-full font-bold text-xs tracking-widest uppercase
+              border-2 transition-all duration-200 active:scale-95
+              ${raceMode === 1
+                ? 'bg-red-600 border-red-400 text-white'
+                : 'bg-slate-800 border-slate-600 text-gray-300 hover:border-slate-400'
+              }
+            `}
+          >
+            {raceMode === 1 ? '🏁 RACE' : '🐢 NORMAL'}
+          </button>
+
+          <button
+            onDoubleClick={toggleAutoMode}
+            className={`
+              flex-1 py-2 rounded-full font-bold text-xs tracking-widest uppercase
+              border-2 transition-all duration-200 active:scale-95
+              ${autoMode
+                ? 'bg-green-600 border-green-400 text-white'
+                : 'bg-slate-800 border-red-600 text-red-400 hover:border-red-400'
+              }
+            `}
+          >
+            {autoMode ? '🤖 AUTO' : '🕹️ MANUAL'}
+          </button>
+
+          <button
+            onDoubleClick={togglePowerOff}
+            className={`
+              flex-1 py-2 rounded-full font-bold text-xs tracking-widest uppercase
+              border-2 transition-all duration-200 active:scale-95
+              ${powerOff
+                ? 'bg-slate-800 border-red-600 text-red-400 hover:border-red-400'
+                : 'bg-green-600 border-green-400 text-white'
+              }
+            `}
+          >
+            {powerOff ? '💀' : '⚡ POWER ON'}
+          </button>
+
+        </div>
+      </Card>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Rover Schematic Section */}
+        <Card className="p-6 bg-slate-900 border-blue-500">
+          <h2 className="text-2xl font-bold text-blue-400 mb-4">
+            Rover Schematic
+          </h2>
+          <div className="h-[600px]">
+            <RoverSchematic ultrasonicData={ultrasonicData} wheelData={wheelData} />
           </div>
         </Card>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Rover Schematic Section */}
-          <Card className="p-6 bg-slate-900 border-blue-500">
-            <h2 className="text-2xl font-bold text-blue-400 mb-4">
-              Rover Schematic
-            </h2>
-            <div className="h-[600px]">
-              <RoverSchematic ultrasonicData={ultrasonicData} wheelData={wheelData} />
-            </div>
-          </Card>
-
-          {/* MPU 9250 Dashboard Section */}
-          <div>
-            <MPU9250Dashboard data={mpuData} />
-          </div>
+        {/* MPU 9250 Dashboard Section */}
+        <div className="self-start">
+          <MPU9250Dashboard data={mpuData} />
         </div>
+
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 

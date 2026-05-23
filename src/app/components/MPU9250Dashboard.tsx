@@ -143,6 +143,7 @@ export function MPU9250Dashboard({ data }: MPU9250DashboardProps) {
             </div>
           </div>
         </Card>
+        
       </div>
 
       {/* Fullscreen Camera Modal */}
