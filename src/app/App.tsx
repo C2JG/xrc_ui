@@ -34,9 +34,10 @@ const AngleServoTopic = new ROSLIB.Topic({
 
 const cameraTopic = new ROSLIB.Topic({
   ros,
-  name: '/camera/processed_image',
-  messageType: 'sensor_msgs/Image'
+  name: '/camera/compressed_image',
+  messageType: 'sensor_msgs/CompressedImage'
 });
+
 
 const publisher = new ROSLIB.Topic({
   ros,
@@ -180,12 +181,11 @@ export default function App() {
   const [cameraImage, setCameraImage] = useState<string | null>(null);
 
   useEffect(() => {
-  cameraTopic.subscribe((msg: any) => {
-    // msg.data est un array de bytes, on le convertit en base64
+    cameraTopic.subscribe((msg: any) => {
     const binary = String.fromCharCode(...new Uint8Array(msg.data));
     const base64 = btoa(binary);
-    setCameraImage(`data:image/rgb8;base64,${base64}`);
-  });
+    setCameraImage(`data:image/jpeg;base64,${base64}`);
+    });
   }, []);
     
     
