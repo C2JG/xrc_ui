@@ -14,6 +14,12 @@ const ultrasonicTopic = new ROSLIB.Topic({
   messageType: "custom_msg/UltrasonicDistance",
 }); 
 
+const mpuTopic = new ROSLIB.Topic({
+  ros,
+  name: '/mpu_data_feedback',
+  messageType: 'custom_msg/MPUData'
+});
+
 const DCSpeedTopic = new ROSLIB.Topic({
   ros,
   name: "/dc_speed_feedback",
@@ -71,16 +77,16 @@ type WheelData = {
    BR: { speed: number; servoAngle: number };
   };
 
+
+
 const SENSOR_ID_TO_KEY = {
-  1: "uFL",   // Front Left
-  2: "uFFL",  // Front Front Left
-  3: "uFFR",  // Front Front Right
-  4: "uFR",   // Front Right
-  5: "uMR",   // Middle Right
-  6: "uBR",   // Back Right
-  7: "uBL",   // Back Left
-  8: "uML",   // Middle Left
+  1: "uML",  // Middle Left
+  2: "uB",   // Back (centré)
+  3: "uMR",  // Middle Right
+  4: "uFL",  // Front Left
+  5: "uFR",  // Front Right
 } as const;
+
 
 
 const WHEELs_ID_TO_KEY = {
@@ -95,16 +101,15 @@ const WHEELs_ID_TO_KEY = {
 
 export default function App() {
   // Ultrasonic sensor data (distance in cm) - 8 sensors total
+  
   const [ultrasonicData, setUltrasonicData] = useState({
     uFL: 300,
-    uFFL: 300,
-    uFFR: 300,
     uFR: 300,
     uML: 300,
     uMR: 300,
-    uBL: 300,
-    uBR: 300,
+    uB: 300,
   });
+
 
   // Wheel motor and servo data
   const [wheelData, setWheelData] = useState({
@@ -203,6 +208,18 @@ export default function App() {
       }));
     };
 
+    const handleMPU = (msg: any) => {
+    const { x, y, z, type } = msg;
+    if (type === 97) {        // 'a'
+      setMpuData(prev => ({ ...prev, accelerometer: { x, y, z } }));
+    } else if (type === 103) { // 'g'
+      setMpuData(prev => ({ ...prev, gyroscope: { x, y, z } }));
+    } else if (type === 109) { // 'm'
+      setMpuData(prev => ({ ...prev, magnetometer: { x, y, z } }));
+    }
+};
+
+    mpuTopic.subscribe(handleMPU);
     ultrasonicTopic.subscribe(handleMessage);
     DCSpeedTopic.subscribe(ActualisationSpeed);
     AngleServoTopic.subscribe(ActualisationAngle);
@@ -210,50 +227,6 @@ export default function App() {
 
   }, []);
       
-
-  // Simulate real-time sensor data updates with smooth incrementation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      
-      // Increment MPU 9250 data smoothly
-      const newMpuData = { ...mpuRef.current };
-      
-      // Accelerometer: x and y from -0.2 to 0.2 (step 0.01), z from 9.6 to 10.0 (step 0.01)
-      newMpuData.accelerometer.x += 0.01;
-      if (newMpuData.accelerometer.x > 0.2) newMpuData.accelerometer.x = -0.2;
-      
-      newMpuData.accelerometer.y += 0.01;
-      if (newMpuData.accelerometer.y > 0.2) newMpuData.accelerometer.y = -0.2;
-      
-      newMpuData.accelerometer.z += 0.01;
-      if (newMpuData.accelerometer.z > 10.0) newMpuData.accelerometer.z = 9.6;
-      
-      // Gyroscope: from -5 to 5 (step 0.2)
-      newMpuData.gyroscope.x += 0.2;
-      if (newMpuData.gyroscope.x > 5) newMpuData.gyroscope.x = -5;
-      
-      newMpuData.gyroscope.y += 0.2;
-      if (newMpuData.gyroscope.y > 5) newMpuData.gyroscope.y = -5;
-      
-      newMpuData.gyroscope.z += 0.1;
-      if (newMpuData.gyroscope.z > 2.5) newMpuData.gyroscope.z = -2.5;
-      
-      // Magnetometer: x from 25 to 35, y from 10 to 20, z from -25 to -15 (step 0.5)
-      newMpuData.magnetometer.x += 0.5;
-      if (newMpuData.magnetometer.x > 35) newMpuData.magnetometer.x = 25;
-      
-      newMpuData.magnetometer.y += 0.5;
-      if (newMpuData.magnetometer.y > 20) newMpuData.magnetometer.y = 10;
-      
-      newMpuData.magnetometer.z += 0.5;
-      if (newMpuData.magnetometer.z > -15) newMpuData.magnetometer.z = -25;
-      
-      mpuRef.current = newMpuData;
-      setMpuData(newMpuData);
-    }, 500); // Update every 500ms
-
-    return () => clearInterval(interval);
-  }, []);
   
 
   return (
