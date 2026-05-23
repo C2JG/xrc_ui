@@ -21,11 +21,14 @@ interface MPU9250Data {
   };
 }
 
+
+
 interface MPU9250DashboardProps {
   data: MPU9250Data;
+  cameraImage: string | null;
 }
 
-export function MPU9250Dashboard({ data }: MPU9250DashboardProps) {
+export function MPU9250Dashboard({ data, cameraImage }: MPU9250DashboardProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -121,7 +124,7 @@ export function MPU9250Dashboard({ data }: MPU9250DashboardProps) {
           >
             {/* Camera feed image */}
             <img
-              src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=400&h=300&fit=crop"
+              src={cameraImage ?? "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=400&h=300&fit=crop"}
               alt="Rover camera view"
               className="w-full h-full object-cover"
             />
@@ -143,7 +146,7 @@ export function MPU9250Dashboard({ data }: MPU9250DashboardProps) {
             </div>
           </div>
         </Card>
-        
+
       </div>
 
       {/* Fullscreen Camera Modal */}
@@ -163,7 +166,7 @@ export function MPU9250Dashboard({ data }: MPU9250DashboardProps) {
           {/* Fullscreen camera view */}
           <div className="relative w-full h-full">
             <img
-              src="https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=1920&h=1080&fit=crop"
+              src={cameraImage ?? "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?w=1920&h=1080&fit=crop"}
               alt="Rover camera view fullscreen"
               className="w-full h-full object-contain"
             />

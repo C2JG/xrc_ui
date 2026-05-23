@@ -32,6 +32,11 @@ const AngleServoTopic = new ROSLIB.Topic({
   messageType: "custom_msg/ServoAngle",
 }); 
 
+const cameraTopic = new ROSLIB.Topic({
+  ros,
+  name: '/camera/processed_image',
+  messageType: 'sensor_msgs/Image'
+});
 
 const publisher = new ROSLIB.Topic({
   ros,
@@ -172,7 +177,16 @@ export default function App() {
     magnetometer: { x: 25, y: 10, z: -25 },
   });
 
+  const [cameraImage, setCameraImage] = useState<string | null>(null);
 
+  useEffect(() => {
+  cameraTopic.subscribe((msg: any) => {
+    // msg.data est un array de bytes, on le convertit en base64
+    const binary = String.fromCharCode(...new Uint8Array(msg.data));
+    const base64 = btoa(binary);
+    setCameraImage(`data:image/rgb8;base64,${base64}`);
+  });
+  }, []);
     
     
   // --- Souscriptions ROS ---
@@ -310,7 +324,7 @@ export default function App() {
 
         {/* MPU 9250 Dashboard Section */}
         <div className="self-start">
-          <MPU9250Dashboard data={mpuData} />
+          <MPU9250Dashboard data={mpuData} cameraImage={cameraImage} />
         </div>
 
       </div>
