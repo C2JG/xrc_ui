@@ -1,81 +1,81 @@
-# XRC UI – Tableau de contrôle du rover
+# XRC UI – Rover Control Dashboard
 
-Interface web de **pilotage et de supervision** du rover [XRC Rover](https://github.com/C2JG/xrc_rover), développée en équipe dans le cadre d'**EPFL Xplore**. Elle communique en temps réel avec le rover sous **ROS 2** grâce à **rosbridge** (WebSocket) et à la librairie **roslib**.
 
-# Mon rôle :
-intégration de la manette dans l'interface (lecture via la Gamepad API et envoi des commandes au rover), et affichage en temps réel des données des capteurs ultrasons et du gyroscope.
+Web interface to **drive and monitor** the [XRC Rover](https://github.com/C2JG/xrc_rover), built as a team project at **EPFL Xplore**. It talks to the rover's **ROS 2** stack in real time through **rosbridge** (WebSocket) and the **roslib** library.
 
-## Équipe
+# My role:
+  integrated the gamepad into the interface (reading it through the Gamepad API and sending commands to the rover), and built the real-time display of the ultrasonic and gyroscope sensor data.
+
+
+## Team
 
 - [@C2JG](https://github.com/C2JG)
 - [@AquIce](https://github.com/AquIce)
+  
+## Features
 
----
-## Fonctionnalités
+- **Gamepad driving**: a gamepad plugged into the computer is read directly in the browser (Gamepad API). Its sticks, triggers and buttons are sent to the rover on the `gamepad_input` topic.
+- **Video feed**: displays the rover's camera stream (`/camera/compressed_image`).
+- **Live sensor data**:
+  - distances measured by the **ultrasonic** sensors;
+  - accelerometer and **gyroscope** readings (MPU9250 IMU), shown as charts.
+- **Rover schematic**: speed of each wheel and servo angles, updated live.
+- **Rover controls**:
+  - switch between **manual and automatic** modes (`/state_switch` topic);
+  - **race mode** (`/gamepad_race_input`);
+  - rover **power off** (`/poweroff`).
 
-- **Pilotage à la manette** : la manette branchée sur le PC est lue directement dans le navigateur (Gamepad API). Ses joysticks, gâchettes et boutons sont envoyés au rover sur le topic `gamepad_input`.
-- **Retour vidéo** : affichage du flux de la caméra du rover (`/camera/compressed_image`).
-- **Capteurs en temps réel** :
-  - distances mesurées par les capteurs **ultrasons** ;
-  - accéléromètre et **gyroscope** (centrale inertielle MPU9250), affichés sous forme de graphiques.
-- **Schéma du rover** : vitesse de chaque roue et angle des servomoteurs, mis à jour en direct.
-- **Commandes du rover** :
-  - bascule entre les modes **manuel et automatique** (topic `/state_switch`) ;
-  - **mode course** (`/gamepad_race_input`) ;
-  - **extinction** du rover (`/poweroff`).
-
-## Comment ça marche
+## How it works
 
 ```
-Manette ──► Navigateur (React + Gamepad API) ──► rosbridge (ws://localhost:9090) ──► Rover (ROS 2)
-                       ▲                                                               │
-                       └──────────── vidéo, capteurs, vitesses des roues ◄─────────────┘
+Gamepad ──► Browser (React + Gamepad API) ──► rosbridge (ws://localhost:9090) ──► Rover (ROS 2)
+                    ▲                                                             │
+                    └───────────── video, sensors, wheel speeds ◄─────────────────┘
 ```
 
-| Topic ROS | Sens | Contenu |
+| ROS topic | Direction | Content |
 |---|---|---|
-| `gamepad_input` | UI → rover | État de la manette (`GamepadData`) |
-| `/state_switch` | UI → rover | Mode `MANUAL` / `AUTO` |
-| `/gamepad_race_input` | UI → rover | Mode course |
-| `/poweroff` | UI → rover | Extinction |
-| `/ultrasonic_distance_feedback` | rover → UI | Distances des ultrasons |
-| `/mpu_data_feedback` | rover → UI | Accéléromètre et gyroscope |
-| `/dc_speed_feedback` | rover → UI | Vitesse des moteurs |
-| `/servo_angle_update` | rover → UI | Angle des servomoteurs |
-| `/camera/compressed_image` | rover → UI | Flux caméra |
+| `gamepad_input` | UI → rover | Gamepad state (`GamepadData`) |
+| `/state_switch` | UI → rover | `MANUAL` / `AUTO` mode |
+| `/gamepad_race_input` | UI → rover | Race mode |
+| `/poweroff` | UI → rover | Power off |
+| `/ultrasonic_distance_feedback` | rover → UI | Ultrasonic distances |
+| `/mpu_data_feedback` | rover → UI | Accelerometer and gyroscope |
+| `/dc_speed_feedback` | rover → UI | Motor speeds |
+| `/servo_angle_update` | rover → UI | Servo angles |
+| `/camera/compressed_image` | rover → UI | Camera stream |
 
-## Technologies
+## Tech stack
 
-React · TypeScript · Vite · Tailwind CSS · shadcn/ui · Recharts · roslib / rosbridge · Gamepad API · maquette Figma
+React · TypeScript · Vite · Tailwind CSS · shadcn/ui · Recharts · roslib / rosbridge · Gamepad API · Figma mockup
 
-## Lancer le projet
+## Getting started
 
-Prérequis : **Node.js**, ainsi que le rover (ou sa stack ROS 2) lancé avec **rosbridge** sur le port 9090 :
+Requirements: **Node.js**, and the rover (or its ROS 2 stack) running with **rosbridge** on port 9090:
 
 ```bash
 ros2 launch rosbridge_server rosbridge_websocket_launch.xml
 ```
 
-Puis lancer l'interface :
+Then start the interface:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Ouvre ensuite l'adresse affichée (par défaut `http://localhost:5173`) et branche une manette.
+Open the URL shown in the terminal (`http://localhost:5173` by default) and plug in a gamepad.
 
 
+## Original Figma bundle
 
-_Maquette initiale réalisée sur Figma. Copie du projet d'équipe original, publiée ici à titre de portfolio._
-  # RoverDashbaord
+This project started as a code bundle exported from Figma for **RoverDashboard**. The original design is available on [Figma](https://www.figma.com/design/nxds9RTPWRbqARN6ElgURj/RoverDashbaord).
 
-  This is a code bundle for RoverDashbaord. The original project is available at https://www.figma.com/design/nxds9RTPWRbqARN6ElgURj/RoverDashbaord.
+To run the code:
 
-  ## Running the code
+- Run `npm i` to install the dependencies.
+- Run `npm run dev` to start the development server.
 
-  Run `npm i` to install the dependencies.
+---
 
-  Run `npm run dev` to start the development server.
-
-  
+_Copy of the original team project, published here as part of my portfolio._
